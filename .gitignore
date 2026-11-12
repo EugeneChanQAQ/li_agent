@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Local environment configuration; keep the example template
+.env
+.env.*
+!.env.example
+
+# macOS metadata
+.DS_Store
+
+# Local development notes and handoff documents
+/devlogs/
+/handoff/
+/dev_diary_by_module.rtf
