@@ -11,6 +11,7 @@ from harness.runtime.loop import AgentLoop
 from harness.runtime.runtime import AgentRuntime
 from harness.runtime.store import MemoryStore
 from harness.tool.executor import ToolExecutor
+from harness.tool.current_time import CurrentTimeTool
 
 
 async def main() -> None:
@@ -41,7 +42,9 @@ async def main() -> None:
         base_url=base_url,
     ) as client:
         provider = DeepSeekProvider(client)
-        executor = ToolExecutor(tools=[])
+
+        time_tool = CurrentTimeTool()
+        executor = ToolExecutor(tools=[time_tool])
         loop = AgentLoop(
             provider=provider,
             tool_executor=executor,
@@ -53,7 +56,7 @@ async def main() -> None:
         request = LLMRequest(
             model=model,
             messages=[Message(role="user", content=task)],
-            tools=[],
+            tools=[time_tool.definition],
         )
 
         print("\n执行中……")
