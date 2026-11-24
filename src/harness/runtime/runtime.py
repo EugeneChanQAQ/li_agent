@@ -3,20 +3,23 @@ from datetime import  datetime, timezone
 
 from .models import RunRecord
 from harness.provider.models import LLMRequest
-from harness.runtime.store import MemoryStore
+from harness.runtime.store import MemoryStore, JsonRunStore
 from harness.runtime.loop import AgentLoop
 
 class AgentRuntime:
-    def __init__(self, loop: AgentLoop, store: MemoryStore):
+    def __init__(self, loop: AgentLoop, store: JsonRunStore | MemoryStore) -> None:
         self.loop = loop
         self.store = store
 
-    async def run(self, request: LLMRequest) -> RunRecord:
+    async def run(self, request: LLMRequest, *, session_id: str) -> RunRecord:
         run_id = str(uuid4())
         start_time = datetime.now(timezone.utc)
+        request_snapshot = request.model_copy(deep=True)
 
         running_record = RunRecord(
             run_id=run_id,
+            session_id=session_id,
+            request=request_snapshot,
             status="running",
             started_at=start_time,
         )
@@ -27,6 +30,8 @@ class AgentRuntime:
         except Exception as exc:
             final_record = RunRecord(
                 run_id=run_id,
+                session_id=session_id,
+                request=request_snapshot,
                 status="failed",
                 started_at=start_time,
                 finished_at=datetime.now(timezone.utc),
@@ -39,6 +44,8 @@ class AgentRuntime:
                       )
             final_record = RunRecord(
                 run_id=run_id,
+                session_id=session_id,
+                request=request_snapshot,
                 status=status,
                 started_at=start_time,
                 finished_at=datetime.now(timezone.utc),

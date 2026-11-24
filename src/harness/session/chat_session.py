@@ -67,7 +67,10 @@ class ChatSession:
             ],
         )
 
-        run_record = await self._runtime.run(request)
+        run_record = await self._runtime.run(
+            request,
+            session_id=self._record.session_id,
+        )
 
         # 正常完成才保存历史
         if run_record.status == "completed":

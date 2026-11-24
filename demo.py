@@ -11,7 +11,7 @@ from uuid import uuid4
 from harness.provider.deepseek_provider import DeepSeekProvider
 from harness.runtime.loop import AgentLoop
 from harness.runtime.runtime import AgentRuntime
-from harness.runtime.store import MemoryStore
+from harness.runtime.store import MemoryStore, JsonRunStore
 from harness.session.chat_session import ChatSession, SessionSaveError
 from harness.tool.current_time import CurrentTimeTool
 from harness.tool.executor import ToolExecutor
@@ -73,7 +73,7 @@ async def main() -> None:
             max_steps=5,
         )
 
-        store = MemoryStore()
+        store = JsonRunStore(project_path / "data" / "runs")
         runtime = AgentRuntime(loop=loop, store=store)
 
         # 会话只创建一次，负责跨 Run 保存历史。

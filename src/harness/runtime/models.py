@@ -1,9 +1,9 @@
 from typing import Literal
 from datetime import datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
-from harness.provider.models import ToolMessage, Message
+from harness.provider.models import ToolMessage, Message, LLMRequest
 
 class LoopResult(BaseModel):
     messages: list[Message | ToolMessage] = Field(min_length=1, description="List of messages in this turn")
@@ -36,11 +36,20 @@ class LoopResult(BaseModel):
 
 class RunRecord(BaseModel):
     run_id: str
+    session_id: str
+    request: LLMRequest
     status: Literal["running", "completed", "stopped", "failed"]
     started_at: datetime
     finished_at: datetime | None = None
     result: LoopResult | None = None
     error: str | None = None
+
+    @field_validator("run_id", "session_id")
+    @classmethod
+    def validate_identifier(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("run_id 和 session_id 不能为空。")
+        return value
 
     @model_validator(mode="after")
     def validate_state(self) -> "RunRecord": # 加引号是因为此时类还在定义过程中

@@ -38,6 +38,13 @@ class TestChatSession(unittest.IsolatedAsyncioTestCase):
         second = await session.send_message("第二问")
         third = await session.send_message("第三问")
         self.assertEqual(len({first.run_id, second.run_id, third.run_id}), 3)
+        for record in (first, second, third):
+            self.assertEqual(record.session_id, "test-session")
+        self.assertEqual([m.content for m in first.request.messages], ["第一问"])
+        self.assertEqual([m.content for m in second.request.messages],
+                         ["第一问", "第一答", "第二问"])
+        self.assertEqual([m.content for m in third.request.messages],
+                         ["第一问", "第一答", "第二问", "第二答", "第三问"])
         self.assertEqual(client.requests[2]["messages"], [
             {"role": "user", "content": "第一问"},
             {"role": "assistant", "content": "第一答"},
