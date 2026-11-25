@@ -1,5 +1,6 @@
 import asyncio
 import os
+import httpx
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -14,6 +15,7 @@ from harness.runtime.runtime import AgentRuntime
 from harness.runtime.store import MemoryStore, JsonRunStore
 from harness.session.chat_session import ChatSession, SessionSaveError
 from harness.tool.current_time import CurrentTimeTool
+from harness.tool.web_search import WebSearchTool
 from harness.tool.executor import ToolExecutor
 from harness.session.models import SessionRecord
 from harness.session.store import JsonSessionStore
@@ -24,6 +26,10 @@ async def main() -> None:
     project_path = Path(__file__).resolve().parent
     env_path = project_path / ".env"
     load_dotenv(env_path)
+
+    tavily_api_key = os.getenv("TAVILY_API_KEY", "").strip()
+    if not tavily_api_key:
+        raise ValueError("请在 .env 或环境变量中配置 TAVILY_API_KEY。")
 
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
     model = os.getenv("DEEPSEEK_MODEL", "").strip()
@@ -57,15 +63,22 @@ async def main() -> None:
         print(f"会话初始化失败：{type(exc).__name__}: {exc}")
         return
 
-    async with AsyncOpenAI(
-        api_key=api_key,
-        base_url=base_url,
-    ) as client:
+    async with (
+        AsyncOpenAI(
+                api_key=api_key,
+                base_url=base_url,
+            ) as client,
+        httpx.AsyncClient() as search_client,
+    ):
         # 组装执行链，整个会话期间复用。
         provider = DeepSeekProvider(client)
 
         time_tool = CurrentTimeTool()
-        executor = ToolExecutor(tools=[time_tool])
+        web_search_tool = WebSearchTool(client=search_client, api_key=tavily_api_key)
+        registered_tools = [time_tool, web_search_tool]
+
+        
+        executor = ToolExecutor(tools=registered_tools)
 
         loop = AgentLoop(
             provider=provider,
@@ -81,7 +94,7 @@ async def main() -> None:
         session = ChatSession(
             runtime=runtime,
             model=model,
-            tools=[time_tool.definition],
+            tools=[tool.definition for tool in registered_tools],
             store=session_store,
             record=session_record,
         )
