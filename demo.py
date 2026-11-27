@@ -16,6 +16,7 @@ from harness.runtime.store import MemoryStore, JsonRunStore
 from harness.session.chat_session import ChatSession, SessionSaveError
 from harness.tool.current_time import CurrentTimeTool
 from harness.tool.web_search import WebSearchTool
+from harness.tool.read_web import ReadWebTool
 from harness.tool.executor import ToolExecutor
 from harness.session.models import SessionRecord
 from harness.session.store import JsonSessionStore
@@ -75,7 +76,8 @@ async def main() -> None:
 
         time_tool = CurrentTimeTool()
         web_search_tool = WebSearchTool(client=search_client, api_key=tavily_api_key)
-        registered_tools = [time_tool, web_search_tool]
+        read_web_tool = ReadWebTool(client=search_client, api_key=tavily_api_key)
+        registered_tools = [time_tool, web_search_tool, read_web_tool]
 
         
         executor = ToolExecutor(tools=registered_tools)
